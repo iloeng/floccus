@@ -1,5 +1,15 @@
 <template>
   <v-container>
+    <div>
+      <v-text-field
+        append-icon="mdi-label"
+        class="mt-2 mb-4"
+        :value="label"
+        :label="t('LabelAccountlabel')"
+        :hint="t('DescriptionAccountlabel')"
+        :persistent-hint="true"
+        @input="$emit('update:label', $event)" />
+    </div>
     <v-card class="mb-4">
       <v-card-title
         id="server"
@@ -81,11 +91,13 @@
         {{ t('LabelOptionsSyncBehavior') }}
       </v-card-title>
       <v-card-text>
+        <OptionAutoSync
+            :value="enabled"
+            @input="$emit('update:enabled', $event)" />
         <OptionSyncInterval
           :value="syncInterval"
           @input="$emit('update:syncInterval', $event)" />
         <OptionSyncStrategy
-          v-if="!isBrowser"
           :value="strategy"
           @input="$emit('update:strategy', $event)" />
         <OptionNestedSync
@@ -126,11 +138,12 @@ import OptionDownloadLogs from './OptionDownloadLogs'
 import OptionAllowNetwork from './native/OptionAllowNetwork'
 import OptionPassphrase from './OptionPassphrase'
 import OptionExportBookmarks from './OptionExportBookmarks.vue'
+import OptionAutoSync from './OptionAutoSync.vue'
 
 export default {
   name: 'OptionsGoogleDrive',
-  components: { OptionExportBookmarks, OptionPassphrase, OptionAllowNetwork, OptionDownloadLogs, OptionFailsafe, OptionSyncFolder, OptionDeleteAccount, OptionSyncStrategy, OptionResetCache, OptionSyncInterval, OptionNestedSync },
-  props: ['username', 'password', 'refreshToken', 'localRoot', 'allowNetwork', 'syncInterval', 'strategy', 'bookmark_file', 'nestedSync', 'failsafe'],
+  components: { OptionAutoSync, OptionExportBookmarks, OptionPassphrase, OptionAllowNetwork, OptionDownloadLogs, OptionFailsafe, OptionSyncFolder, OptionDeleteAccount, OptionSyncStrategy, OptionResetCache, OptionSyncInterval, OptionNestedSync },
+  props: ['username', 'password', 'refreshToken', 'localRoot', 'allowNetwork', 'syncInterval', 'strategy', 'bookmark_file', 'nestedSync', 'failsafe', 'enabled', 'label'],
   data() {
     return {
       panels: [0, 1],

@@ -3,7 +3,6 @@ import NativeTree from './NativeTree'
 import AdapterFactory from '../AdapterFactory'
 import Account from '../Account'
 import { IAccountData } from '../interfaces/AccountStorage'
-import Controller from '../Controller'
 import {
   CreateBookmarkError,
   FailsafeError, FloccusError,
@@ -11,7 +10,7 @@ import {
   InconsistentBookmarksExistenceError, LockFileError,
   MissingItemOrderError,
   ParseResponseError,
-  UnknownFolderItemOrderError
+  UnknownFolderItemOrderError, UpdateBookmarkError
 } from '../../errors/Error'
 import Logger from '../Logger'
 import { i18n } from './I18n'
@@ -19,10 +18,13 @@ import { i18n } from './I18n'
 export default class NativeAccount extends Account {
   static async get(id:string):Promise<Account> {
     const storage = new NativeAccountStorage(id)
-    const controller = await Controller.getSingleton()
-    const data = await storage.getAccountData(controller.key)
+    const data = await storage.getAccountData(null)
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     const tree = new NativeTree(storage)
     await tree.load()
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     return new NativeAccount(id, storage, await AdapterFactory.factory(data), tree)
   }
 
@@ -31,10 +33,13 @@ export default class NativeAccount extends Account {
     const adapter = await AdapterFactory.factory(data)
     const storage = new NativeAccountStorage(id)
 
-    const controller = await Controller.getSingleton()
-    await storage.setAccountData(data, controller.key)
+    await storage.setAccountData(data, null)
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     const tree = new NativeTree(storage)
     await tree.load()
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     return new NativeAccount(id, storage, adapter, tree)
   }
 
@@ -83,7 +88,10 @@ export default class NativeAccount extends Account {
       return i18n.getMessage('Error' + String(er.code).padStart(3, '0'), [er.percent])
     }
     if (er instanceof CreateBookmarkError) {
-      return i18n.getMessage('Error' + String(er.code).padStart(3, '0'), [er.bookmark])
+      return i18n.getMessage('Error' + String(er.code).padStart(3, '0'), [er.bookmark.inspect()])
+    }
+    if (er instanceof UpdateBookmarkError) {
+      return i18n.getMessage('Error' + String(er.code).padStart(3, '0'), [er.bookmark.inspect()])
     }
     if (er instanceof FloccusError) {
       return i18n.getMessage('Error' + String(er.code).padStart(3, '0'))

@@ -106,14 +106,18 @@ export default {
         alert(e.message)
       }
     },
-    onTriggerFilePicker() {
+    async onTriggerFilePicker() {
       this.$refs.filePicker.click()
+      if (this.isBrowser) {
+        await this.$store.dispatch('REQUEST_NETWORK_PERMISSIONS')
+      }
     },
     async onFileSelect() {
       const file = this.$refs.filePicker.files[0]
       try {
         const accounts = JSON.parse(await file.text())
         await this.$store.dispatch('IMPORT_ACCOUNTS', accounts)
+        alert(this.t('LabelImportsuccessful'))
       } catch (e) {
         alert(e.message)
       }

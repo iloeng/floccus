@@ -75,7 +75,7 @@
     "message": "E025: Die Einstellung der Bookmarks-Datei darf nicht mit einem Schrägstrich beginnen: '/'"
   },
   "Error026": {
-    "message": "E026: HTTP-Status {0}. Fehler beim Laden der Lesezeichen."
+    "message": "E026: Der Synchronisierungsprozess wurde abgebrochen"
   },
   "Error027": {
     "message": "E027: Der Synchronisierungsprozess wurde unterbrochen."
@@ -84,7 +84,7 @@
     "message": "E028: Konnte nicht am Server authentifiziert werden. Falls Sie 2FA nutzen, stellen Sie sicher auch Zugriff auf alle Dateien zu gewähren."
   },
   "Error029": {
-    "message": "E029: Löschsicherung: Die aktuelle Synchronisierung würde {0}% der lokalen Bookmarks löschen. Floccus weigert sich dies auszüführen. Falls Sie trotzdem fortfahren wollen, deaktivieren Sie die Löschsicherung in den Konto-Einstellungen."
+    "message": "E029: Löschsicherung: Die aktuelle Synchronisierung würde {0}% der lokalen Lesezeichen löschen. Floccus weigert sich dies auszüführen. Falls Sie trotzdem fortfahren wollen, deaktivieren Sie die Löschsicherung in den Konto-Einstellungen."
   },
   "Error030": {
     "message": "E030: Entschlüsseln der Lesezeichendatei fehlgeschlagen. Die Passphrase könnte falsch oder die Datei beschädigt sein."
@@ -99,10 +99,19 @@
     "message": "E033: Weiterleitung festgestellt. Vergewissern Sie sich, dass der angegebene Server die ausgewählte Synchronisierungsmethode unterstützt und die URL stimmt, die Sie eingegeben haben und nicht auf eine andere URL weiterleitet. Falls die Weiterleitung teil Ihres Server-Setups ist, können Sie diese Kontrolle in den Einstellungen deaktivieren."
   },
   "Error034": {
-    "message": "E034: Lesezeichendatei ist nicht erreichbar. Haben Sie vergessen eine Verschlüsselungspassphrase anzugeben?"
+    "message": "E034: Die entfernte Lesezeichendatei ist nicht erreichbar. Haben Sie vergessen eine Verschlüsselungspassphrase anzugeben?"
   },
   "Error035": {
     "message": "E035: Das folgende Lesezeichen konnte nicht auf dem Server erstellt werden: {0}"
+  },
+  "Error036": {
+    "message": "E036: Fehlende Berechtigungen für den Zugriff auf den Sync-Server"
+  },
+  "Error037": {
+    "message": "E037: Ressource ist gesperrt"
+  },
+  "Error038": {
+    "message": "E038: Konnte lokalen Ordner nicht finden"
   },
   "LabelWebdavurl": {
     "message": "WebDAV-URL"
@@ -128,17 +137,26 @@
  "DescriptionBookmarksfilegoogle": {
    "message": "Der Dateiname der Lesezeichendatei, die in Ihrem Google Drive gespeichert wird (stellen Sie sicher, dass der Dateiname in Google Drive einzigartig ist)."
  },
+  "DescriptionBookmarksfilegit": {
+    "message": "Pfad zur Lesezeichen-Datei, relativ zu deinem Git-Repository Wurzelverzeichnis (alle Verzeichnisse auf diesem Pfad müssen bereits existieren), z.B. personal_stuff/bookmarks.xbel"
+  },
   "LabelServerfolder": {
-    "message": "Server-Ordner"
+    "message": "Ziel auf dem Server"
   },
   "DescriptionServerfolder": {
-    "message": "Das Pfad-Präfix unter welchem dieses Konto auf dem Server agiert. Wenn Sie z. B. '/arbeit' eingeben, werden alle Lesezeichen auf dem Server mit diesem Pfad als Präfix zu ihrem eigentlichen Pfad angelegt. Dies erlaubt Ihnen Ihre Lesezeichen auf dem Server in verschiedene Profile aufzuteilen. Lassen Sie dieses Feld leer, um kein Präfix zu setzen."
+    "message": "Beim Synchronisieren werden Ihre Lesezeichen in diesem Browser als Links unter diesem Pfad auf dem Server gespeichert. Beachten Sie, dass dieser Pfad einen Ordner in der Nextcloud Bookmarks-App darstellt, nicht einen Ordner in Nextcloud Files. Lassen Sie dieses Feld leer, um alle Links direkt im obersten Ordner auf dem Server zu platzieren."
+  },
+  "LabelLocaltarget": {
+    "message": "Lokales Ziel"
+  },
+  "DescriptionLocaltarget": {
+    "message": "Wählen Sie hier aus, ob Sie Browser-Lesezeichen oder Browser-Tabs synchronisieren möchten."
   },
   "LabelLocalfolder": {
-    "message": "Lokaler Ordner"
+    "message": "Lesezeichenordner"
   },
   "DescriptionLocalfolder": {
-    "message": "Der lokale Lesezeichen-Ordner in diesem Browser, der mit dem Server synchronisiert wird. Per Default wird ein neuer Ordner für Sie angelegt. (Hinweis: Es ist nun möglich das Wurzel-Verzeichnis zwischen verschiedenen Browser-Typen direkt zu synchronisieren.) "
+    "message": "Lesezeichen in diesem Lesezeichenordner werden als Links auf dem Server gespeichert und Links auf dem Server werden als Lesezeichen in diesem Lesezeichenordner in diesem Browser gespeichert."
   },
   "LabelRootfolder": {
     "message": "Wurzelordner"
@@ -154,6 +172,9 @@
   },
   "LabelCancelsync": {
     "message": "Abbrechen"
+  },
+  "LabelSyncall": {
+    "message": "Alle Profile synchronisieren"
   },
   "LabelAutosync": {
     "message": "Auto-sync"
@@ -176,6 +197,9 @@
   "StatusSyncing": {
     "message": "Synchronisiere"
   },
+  "StatusScheduled": {
+    "message": "Geplant"
+  },
   "LabelReset": {
     "message": "Zurücksetzen"
   },
@@ -189,10 +213,10 @@
     "message": "Setzen Sie einen existierenden Ordner, der synchronisiert werden soll."
   },
   "LabelRemoveaccount": {
-    "message": "Konto entfernen"
+    "message": "Profil löschen"
   },
   "DescriptionRemoveaccount": {
-    "message": "Lösche dieses Konto (löscht keine Lesezeichen)"
+    "message": "Löschen Sie dieses Profil (dies entfernt nicht Ihre Lesezeichen)"
   },
   "LabelSyncfromscratch": {
     "message": "Neue Synchronisierung von Grund auf auslösen"
@@ -201,7 +225,7 @@
     "message": "Cache zurücksetzen"
   },
   "DescriptionResetcache": {
-    "message": "Setzen SIe diesen Haken, um den Cache zurückzusetzen, sodass die nächste Synchronisierung garantiert keine Lesezeichen löscht, sondern lediglich Server und Lokale Lesezeichen vereinigt."
+    "message": "Klicken Sie diesen Button, um den Cache zurückzusetzen, sodass die nächste Synchronisierung garantiert keine Lesezeichen löscht, sondern lediglich Server und Lokale Lesezeichen vereinigt."
   },
   "LabelParallelsync": {
     "message": "Synchronisierung beschleunigen"
@@ -246,28 +270,22 @@
     "message": "Nextcloud Bookmarks"
   },
   "DescriptionAdapternextcloudfolders": {
-    "message": "Die Option \"Nextcloud Bookmarks\" ist kompatibel mit mindestens Version v0.14 der Bookmarks-App, die nur http- und ftp-Lesezeichen synchronisieren kann."
+    "message": "Die Option 'Nextcloud Bookmarks' synchronisiert deine Lesezeichen mit der Bookmarks-App für Nextcloud. Sie kann nur http-, ftp- und Javascript-Lesezeichen synchronisieren. Stelle sicher, dass du die Bookmarks-App aus dem Nextcloud App Store in deiner Nextcloud installiert hast. Diese Option kann keine Ende-zu-Ende-Verschlüsselung nutzen."
   },
   "LabelAdapternextcloud": {
     "message": "Nextcloud Bookmarks (alte Version)"
   },
   "DescriptionAdapternextcloud": {
-    "message": "Die Option \"Alte Version\" ist kompatibel mit mindestens Version v0.11 der Bookmarks app. Dabei werden Ordner mittels Tags simuliert, die den Ordner-Pfad enthalten. Es wird nicht empfohlen, diese Option für neue Konten zu verwenden."
+    "message": "Die Legacy-Option ist kompatibel mit mindestens Version v0.11 der Bookmarks-App. Sie wird Ordner mit Hilfe von Tags emulieren, die den Ordnerpfad enthalten. Es wird nicht empfohlen, dies für neue Profile zu verwenden."
   },
   "LabelAdapterwebdav": {
     "message": "WebDAV-Freigabe"
   },
   "DescriptionAdapterwebdav": {
-    "message": "Die WebDAV-Option synchronisiert die Lesezeichen in einer Datei in der angegebenen WebDAV-Freigabe. Es gibt keine Weboberfläche für diese Option und sie kann mit jedem WebDAV-kompatiblen Server genutzt werden. Sie kann http, ftp, Daten und Javascript-Lesezeichen synchronisieren."
+    "message": "Die WebDAV-Option synchronisiert deine Lesezeichen, indem es sie in einer Datei auf dem angegebenen WebDAV-Share speichert. Es gibt zu dieser Option keine Web UI, aber du kannst sie mit jedem WebDAV-kompatiblen Server nutzen. Es können http-, ftp-, Daten-, Datei- und Javascript-Lesezeichen synchronisiert werden. Du kannst bei dieser Option eine Ende-zu-Ende-Verschlüsselung wählen. "
   },
   "LabelAddaccount": {
-    "message": "Konto hinzufügen"
-  },
-  "LabelSecurecredentials": {
-    "message": "Zugangsdaten absichern"
-  },
-  "LabelSecuredcredentials": {
-    "message": "Deine Anmeldedaten sind sicher"
+    "message": "Profil hinzufügen"
   },
   "LabelOpenintab": {
     "message": "In Tab öffnen"
@@ -276,7 +294,7 @@
     "message": "Debug-Logs"
   },
   "LabelFunddevelopment": {
-    "message": "Entwicklung unterstützen"
+    "message": "💸 Unterstütze die Entwicklung finanziell"
   },
   "DescriptionFunddevelopment": {
     "message": "Die Arbeit an floccus wird gefördert durch ein freiwilliges Abo-Modell. Wenn Sie glauben, dass das was ich tue nutzbringend ist, und Sie ohne Not einen kleinen Betrag erübrigen können, freue ich mich wenn Sie meine Arbeit unterstützen. Über eine Bewertung im Addon-Store Ihrer Wall freue ich mich ebenfalls. Vielen Dank. 💙"
@@ -286,12 +304,6 @@
   },
   "LabelUntitledfolder": {
     "message": "Unbenannter Ordner"
-  },
-  "LabelSetkey": {
-    "message": "Passphrase für Floccus einstellen"
-  },
-  "DescriptionSetkey": {
-    "message": "Wenn Sie ein Passwort für Floccus setzen, müssen Sie dieses immer beim Browser-Start eingeben, bevor Sie Ihre Lesezeichen synchronisieren oder generell Floccus benutzen können."
   },
   "LabelSetkeybutton": {
     "message": "Passphrase einstellen"
@@ -322,13 +334,13 @@
   },
   "LabelOptionsscreen": {
     "message": "{0} Optionen",
-    "description": "Title of the options screen. The placeholder holds the account type."
+    "description": "Title of the options screen. The placeholder holds the profile type."
   },
   "LabelPaypal": {
     "message": "Paypal"
   },
   "DescriptionPaypal": {
-    "message": "Tätige eine einmalige Spende über Paypal um das Projekt zu unterstützen."
+    "message": "Spende einmalig oder regelmäßig via Paypal, um das Projekt zu unterstützen"
   },
   "LabelOpencollective": {
     "message": "OpenCollective"
@@ -348,11 +360,23 @@
   "DescriptionGithubsponsors": {
     "message": "Tätige regelmäßige Spenden über GitHub sponsors um das Projekt zu unterstützen"
   },
+  "LabelPatreon": {
+    "message": "Patreon"
+  },
+  "DescriptionPatreon": {
+    "message": "Tätige regelmäßige Spenden über Patreon um das Projekt zu unterstützen."
+  },
+  "LabelKofi": {
+    "message": "Kofi"
+  },
+  "DescriptionKofi": {
+    "message": "Tätige regelmäßige oder einmalige Spenden über Kofi um das Projekt zu unterstützen."
+  },
   "LegacyAdapterDeprecation": {
-    "message": "Warnung! Dieser Konto-Typ ist veraltet und wird bald entfernt. Bitte wechseln Sie zur neuen Nextcloud Synchronisierungsmethode mit besserer Leistungsfähigkeit und Fehlerfreiheit. "
+    "message": "Dieser veraltete Profiltyp wird nicht mehr unterstützt und wird bald entfernt. Bitte wechseln Sie zur neuen Nextcloud-Synchronisierungsmethode. Verbesserte Leistung und Genauigkeit erwarten Sie."
   },
   "LabelUpdated": {
-    "message": "Floccus wurde aktualisiert"
+    "message": "⚡ Floccus wurde aktualisiert"
   },
   "DescriptionUpdated": {
     "message": "Glückwunsch, das aktuellste Floccus-Update befindet sich auf Ihrem Rechner! 🎉"
@@ -373,16 +397,16 @@
     "message": "Gefährliche Funktionen"
   },
   "LabelAccountDeleted": {
-    "message": "Konto gelöscht"
+    "message": "Profil gelöscht"
   },
   "DescriptionAccountDeleted": {
-    "message": "Dieses Konto wurde gelöscht"
+    "message": "Dieses Profil wurde gelöscht."
   },
   "LabelNoAccount": {
-    "message": "Keine Konten vorhanden"
+    "message": "Es gibt noch keine Profile"
   },
   "DescriptionNoAccount": {
-    "message": "Neues Konto erstellen um Lesezeichen zu synchronisieren."
+    "message": "Lege neue Profile an oder importiere Profile aus einer Datei. Danach kannst du mit der Synchronisierung beginnen."
   },
   "LabelLoginFlowStart": {
     "message": "Mit Nextcloud anmelden"
@@ -394,40 +418,46 @@
     "message": "Anmeldung bei Nextcloud fehlgeschlagen."
   },
   "LabelNewAccount": {
-    "message": "Neues Konto"
+    "message": "Profil hinzufügen"
+  },
+  "LabelNewImport": {
+    "message": "Import"
   },
   "LabelNestedSync": {
-    "message": "Verschachtelte Konten"
+    "message": "Verschachtelte Profile"
   },
   "DescriptionNestedSync": {
-    "message": "Sie können Konten so verschachteln, dass ein übergeordneter Ordner zu Konto A gehört und ein untergeordneter Ordner zu Konto A und B. Möchten Sie anderen Konten erlauben, die Ordner dieses Kontos ebenfalls zu synchronisieren?"
+    "message": "Sie können Profile verschachteln, sodass ein übergeordneter Ordner zu Profil A gehört und ein Unterordner zu Profil A und B. Möchten Sie anderen Profilen erlauben, diesen Ordner des Profils zu synchronisieren?"
   },
   "LabelNestedSyncNo": {
-    "message": "Nein, ignoriere den lokalen Ordner dieses Kontos in anderen Konten"
+    "message": "Nein, ignoriere den Ordner dieses Profils in anderen Profilen."
   },
   "LabelNestedSyncYes": {
-    "message": "Ja, den lokalen Ordner dieses Kontos in anderen Konten einbetten"
+    "message": "Ja, nehme den Ordner dieses Profils bei anderen Profilen hinzu."
   },
   "LabelImportExport": {
-    "message": "Konten importieren/exportieren"
+    "message": "Profile importieren/exportieren"
   },
   "LabelExport": {
-    "message": "Konten exportieren"
+    "message": "Profile exportieren"
   },
   "LabelImport": {
-    "message": "Konten importieren"
+    "message": "Profile importieren"
   },
   "DescriptionExport": {
-    "message": "Wählen Sie unten die Konten aus, um sie in einer Datei zu exportieren, damit Sie einfach die selben Konten auf einem anderen Gerät oder Browser wiederherstellen können."
+    "message": "Wählen Sie unten die Profile aus, die Sie in eine Datei exportieren möchten, damit Sie die gleichen Profile problemlos auf einem anderen Gerät oder Browser wiederherstellen können."
   },
   "DescriptionImport": {
-    "message": "Importieren Sie eine Datei mit exportierten Konten aus einem anderen Browser, um sie in diesem Browser anzulegen. Stellen Sie sicher, nach dem Import in den Einstellungen die richtigen Ordner zu wählen."
+    "message": "Importieren Sie hier eine Datei mit exportierten Profilen, um Profile, die auf einem anderen Gerät oder Browser exportiert wurden, wiederherzustellen. Bitte stellen Sie sicher, dass Sie nach dem Importieren erneut die richtigen Synchronisationsordner festlegen."
   },
   "LabelFolderNotFound": {
     "message": "Ordner nicht gefunden"
   },
   "LabelSyncTabs": {
-    "message": "Synchronisiere Reiter"
+    "message": "Browser-Tabs"
+  },
+  "DescriptionSyncTabs": {
+    "message": "Links, die auf dem Server gespeichert sind, werden als Browser-Tabs in Ihrem Browser geöffnet und bestehende geöffnete Browser-Tabs werden als Links auf Ihrem Server gespeichert. Beachten Sie, dass je nach Anzahl der auf dem Server gespeicherten Links möglicherweise Ihr Browser überlastet werden kann, da beim nächsten Synchronisierungslauf alle Links des Servers als Tabs geöffnet werden."
   },
   "LabelTabs": {
     "message": "Reiter"
@@ -475,13 +505,13 @@
     "message": "Ausgeschaltet. Erlaube das Löschen von mehr als 50% meiner lokalen Lesezeichen ohne mich vorher zu fragen."
   },
   "StatusFailsafeoff": {
-    "message": "Löschsicherung ausgeschaltet. Sie laufen Gefahr Daten zu verlieren. Es wird empfohlen die Löschsicherung in den Konto-Einstellungen einzuschalten."
+    "message": "Failsafe deaktiviert. Sie laufen Gefahr unbeabsichtigten Datenverlust zu erleiden. Es wird empfohlen, den Failsafe in den Profil-Einstellungen zu aktivieren."
   },
   "LabelAdaptergoogledrive": {
     "message": "Google Drive"
   },
   "DescriptionAdaptergoogledrive": {
-    "message": "Synchronisieren Sie Lesezeichen mittels einer verschlüsselten Datei, die in Ihrem Google Drive gespeichert wird. Synchronisiert werden können http, ftp, data und javascript Lesezeichen."
+    "message": "Synchronisiere Lesezeichen über eine (optional verschlüsselte) Datei, die in deinem Google Drive gespeichert ist. Es können http-, ftp-, Daten-, Datei- und Javascript-Lesezeichen synchronisiert werden. Du kannst bei dieser Option eine Ende-zu-Ende-Verschlüsselung wählen."
   },
   "LabelLogingoogle": {
     "message": "Mit Google anmelden"
@@ -502,7 +532,7 @@
     "message": "Sende Client-Legitimation"
   },
   "DescriptionClientcert": {
-    "message": "Schalten Sie diese Option an, wenn Ihr Server ein Client-Zertifikat oder Cookies zur Authentifizierung benötigt. Dies kann unerwünschte Nebeneffekte haben, da Floccus sich Cookies mit Ihrem normalen Browser-Profil teilen wird."
+    "message": "Schalten Sie diese Option an, wenn Ihr Server ein Client-Zertifikat oder Cookies zur Authentifizierung benötigt. Dies kann unerwünschte Nebeneffekte haben, da Floccus sich Cookies mit Ihren normalen Browser-Sitzungen teilen wird."
   },
   "LabelAllowredirects": {
     "message": "Erlaube Weiterleitungen in der Server-URL"
@@ -628,7 +658,10 @@
     "message": "Wie soll die Synchronisierung ablaufen?"
   },
   "LabelAccountcreated": {
-    "message": "Konto erstellen"
+    "message": "Profil erstellt"
+  },
+  "DescriptionAccountcreated": {
+    "message": "Ihr Profil wurde erstellt. Sie können diesen Tab jetzt schließen."
   },
   "DescriptionNonhttps": {
     "message": "Sie haben einen Server angegeben, der ein unsicheres Protokoll benutzt. Es wird empfohlen nur Server zu benutzen, die HTTPS unterstützen."
@@ -650,5 +683,101 @@
   },
   "DescriptionImportbookmarks": {
     "message": "Importieren einer HTML-Datei mit Lesezeichen in den aktuellen Ordner"
+  },
+  "LabelExportBookmarks": {
+    "message": "Lesezeichen exportieren"
+  },
+  "DescriptionExportBookmarks" : {
+    "message": "Sie können alle Lesezeichen in diesem Profil als HTML-Datei exportieren, die mit allen gängigen Browsern kompatibel ist."
+  },
+  "LabelShareitem": {
+    "message": "Teilen"
+  },
+  "LabelImportsuccessful": {
+    "message": "Profil(e) erfolgreich importiert"
+  },
+  "DescriptionSyncinprogress": {
+    "message": "Synchronisierung wird gerade durchgeführt"
+  },
+  "DescriptionSyncscheduled": {
+    "message": "Dieses Profil wird bald synchronisiert. Wir warten darauf, dass entweder andere Geräte von Ihnen oder auf andere Profile auf diesem Gerät ihre Synchronisierung abschließen, um mit dieser Synchronisierung zu beginnen."
+  },
+  "LabelAdaptergit": {
+    "message": "Git über HTTPS"
+  },
+  "DescriptionAdaptergit": {
+    "message": "Die Git-Option synchronisiert deine Lesezeichen, indem es sie in einer Datei im angegebenen Git-Repository speichert. Es gibt zu dieser Option keine Web UI, aber du kannst sie mit jedem Git Hostingserver wie Github, Gitlab, Gitea usw. nutzen. Sie kann http-, ftp-, Daten-, Datei- und Javascript-Lesezeichen synchronisieren. Du kannst bei dieser Option keine Ende-zu-Ende-Verschlüsselung nutzen."
+  },
+  "LabelGiturl": {
+    "message": "Repository-URL (HTTP)"
+  },
+  "LabelGitbranch": {
+    "message": "Git Branch"
+  },
+  "LabelTelemetry": {
+    "message": "🐛 Automatisierte Fehlerberichte"
+  },
+  "DescriptionTelemetry": {
+    "message": "Floccus kann automatisiert Fehlerberichte an mich, den Entwickler, senden. Dies kann extrem hilfreich sein, um Fehler in floccus schneller zu finden und zu beheben und wird langfristig deine Nutzererfahrung verbessern. Auch wenn die Fehlerberichte aktiviert sind, werden die floccus-Entwickler niemals in der Lage sein, deine Lesezeichen zu sehen."
+  },
+  "LabelTelemetryenable": {
+    "message": "Sende automatisch Fehlerberichte an die floccus-Entwickler"
+  },
+  "LabelTelemetrydisable": {
+    "message": "Sende keine Fehlerberichte an die floccus-Entwickler"
+  },
+  "LabelAccountlabel": {
+    "message": "Profilname"
+  },
+  "DescriptionAccountlabel": {
+    "message": "Gib diesem Profil einen Namen, damit du es leichter wiedererkennst"
+  },
+  "LabelClickcount": {
+    "message": "Zähle Klicks"
+  },
+  "DescriptionClickcount": {
+    "message": "Sende Statistiken über die Nutzung deiner Lesezeichen an deinen Nextcloud-Server, damit du die Lesezeichen nach der Anzahl der Besuche sortieren kannst"
+  },
+  "DescriptionGoogleplayreview": {
+    "message": "Schreibe eine Rezension bei Google Play"
+  },
+  "DescriptionAppstorereview": {
+    "message": "Schreibe eine Rezension im App Store"
+  },
+  "DescriptionChromereview": {
+    "message": "Schreibe eine Rezension im Chrome WebStore"
+  },
+  "DescriptionAlternativereview": {
+    "message": "Schreibe eine Rezension auf AlternativeTo.net"
+  },
+  "DescriptionMozillareview": {
+    "message": "Schreibe eine Rezension bei Mozilla Addons"
+  },
+  "DescriptionEdgereview": {
+    "message": "Schreibe eine Rezension bei Edge Addons"
+  },
+  "LabelWritereview": {
+    "message": "💙 Erzähle es weiter!"
+  },
+  "DescriptionWritereview": {
+    "message": "Wenn dir floccus gefällt, lass es die Welt wissen, indem du auf einer der untenstehenden Plattformen eine Bewertung hinterlässt."
+  },
+  "DescriptionDonateintervention": {
+    "message": "Du liebst Bookmark Syncing? Unterstütze mich!"
+  },
+  "LabelDonate": {
+    "message": "Spenden"
+  },
+  "DescriptionDisabledaftererror": {
+    "message": "Profil wurde nach 10 Wiederholungsversuchen deaktiviert"
+  },
+  "DescriptionBookmarkexists": {
+    "message": "Dieses Lesezeichen existiert bereits im ausgewählten Profil"
+  },
+  "LabelReportproblem": {
+    "message": "Melde ein Problem"
+  },
+  "DescriptionReportproblem": {
+    "message": "Wenn du zu einem konkreten Problem direkt die Entwickler kontaktieren möchtest, dann kannst du das hier tun:"
   }
 }
