@@ -323,14 +323,16 @@ describe('Floccus', function() {
         expect([...localBookmark.tags].sort()).to.deep.equal(['bar', 'foo'])
       })
 
-      it('should converge when tags are only reordered', async function() {
-        const { localResource, bookmarkId } = await setUpTaggedBookmark(['foo', 'bar'])
+      it('should not treat a reordering of tags as a change', async function() {
+        const { localResource, bookmarkId } = await setUpTaggedBookmark(['aaa', 'zzz'])
 
+        // normalizeTags sorts, so writing the same tags in a different order
+        // is not a change at all -- nothing should reach the server
         await localResource.updateBookmark(new Bookmark({
           id: bookmarkId,
           title: 'url',
           url: bookmarkUrl,
-          tags: ['bar', 'foo'],
+          tags: ['zzz', 'aaa'],
           parentId: (await findLocalBookmark(bookmarkUrl)).parentId,
           location: ItemLocation.LOCAL,
         }))
@@ -338,27 +340,17 @@ describe('Floccus', function() {
         await account.sync()
         expect(account.getData().error).to.not.be.ok
 
-        // The reorder is written back once so that both sides agree again --
-        // no tag may be lost or duplicated in the process. Compared as a set,
-        // because the order a server hands its tags back in is its own business
-        // (Nextcloud's findByBookmark() has no ORDER BY, for one).
-        const serverBookmark = await findServerBookmark(bookmarkUrl)
-        expect([...serverBookmark.tags].sort()).to.deep.equal(['bar', 'foo'])
-
-        // ...and the next sync has nothing left to do
-        await account.sync()
-        expect(account.getData().error).to.not.be.ok
-        expect([...(await findServerBookmark(bookmarkUrl)).tags].sort()).to.deep.equal(['bar', 'foo'])
-        expect([...(await findLocalBookmark(bookmarkUrl)).tags].sort()).to.deep.equal(['bar', 'foo'])
+        expect((await findServerBookmark(bookmarkUrl)).tags).to.deep.equal(['aaa', 'zzz'])
+        expect((await findLocalBookmark(bookmarkUrl)).tags).to.deep.equal(['aaa', 'zzz'])
       })
 
-      it('should settle when the server returns tags in an order of its own', async function() {
+      it('should ignore the order a server returns tags in', async function() {
         if (ACCOUNT_DATA.type !== 'fake') {
           // Forcing a specific server-side tag order means reaching into the
           // server's tree, which only the fake one lets us do
           return this.skip()
         }
-        await setUpTaggedBookmark(['foo', 'bar'])
+        await setUpTaggedBookmark(['aaa', 'zzz'])
 
         // Linkwarden hands a bookmark's tags back ordered by tag identity, not
         // in the order they were written (its query specifies no ordering), so
@@ -368,7 +360,7 @@ describe('Floccus', function() {
           ItemType.BOOKMARK,
           (item) => item.url === bookmarkUrl
         )
-        serverBookmark.tags = ['bar', 'foo']
+        serverBookmark.tags = ['zzz', 'aaa']
 
         const serverUpdates = []
         const updateBookmark = account.server.updateBookmark.bind(account.server)
@@ -377,19 +369,14 @@ describe('Floccus', function() {
           return updateBookmark(bookmark)
         }
 
-        // The differing order registers as a change once, and the server wins
-        await account.sync()
-        expect(account.getData().error).to.not.be.ok
-        const settledTags = [...(await findLocalBookmark(bookmarkUrl)).tags]
-        expect(settledTags).to.deep.equal(['bar', 'foo'])
-        const settledUpdates = serverUpdates.length
-
-        // ...and then it stays put, rather than being rewritten every sync
+        // Sorting on the way in means the server's order never reaches the
+        // diff: no write is provoked and what we hold doesn't budge, however
+        // often we sync
         await account.sync()
         await account.sync()
         expect(account.getData().error).to.not.be.ok
-        expect([...(await findLocalBookmark(bookmarkUrl)).tags]).to.deep.equal(settledTags)
-        expect(serverUpdates.length).to.equal(settledUpdates)
+        expect((await findLocalBookmark(bookmarkUrl)).tags).to.deep.equal(['aaa', 'zzz'])
+        expect(serverUpdates).to.deep.equal([])
       })
     })
   })

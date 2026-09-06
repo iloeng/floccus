@@ -34,17 +34,20 @@ let HASH_ITERATIONS = 0
 
 /**
  * Bring a bookmark's tags into canonical form: strings only, trimmed, no empty
- * entries, no duplicates -- but *order preserving*.
+ * entries, no duplicates, sorted.
  *
- * Order is deliberately not normalized: Nextcloud Bookmarks computes its
- * server-side folder hashes over `{title, url, tags}` with the tags in database
- * order, and we read them from the very same source, so keeping that order lets
- * our locally computed hashes agree with the server's. Sorting here would make
- * every bookmark tagged outside floccus hash differently from the server's idea
- * of it, and that folder would be re-fetched on every single sync.
+ * Sorting is what makes tags behave like the set they are: the order a server
+ * hands them back in is its own business (Linkwarden orders by tag identity,
+ * Nextcloud by whatever the database feels like), so without a canonical order
+ * a pure reordering would hash differently and register as a change.
  *
- * The flip side is that a pure reordering counts as a change and gets written
- * back once -- which is what makes the two sides agree again.
+ * The sort has to agree byte for byte with Nextcloud Bookmarks, which sorts
+ * with `sort($tags, SORT_STRING)` before hashing `{title, url, tags}` for its
+ * server-side folder hashes. Plain `.sort()` is UTF-16 code-unit order, which
+ * matches that across the BMP. Do NOT switch this to `localeCompare` -- it is
+ * locale-dependent and would silently stop matching, leaving folders looking
+ * changed on every sync. (Astral characters do diverge from PHP's byte order;
+ * the cost is a needlessly re-fetched folder, never wrong data.)
  *
  * `undefined` means "this resource didn't tell us anything about tags" and is
  * preserved as such, so we never mistake a silent adapter for "all tags removed".
@@ -66,7 +69,7 @@ export function normalizeTags(tags?: string[]): string[] | undefined {
     seen.add(trimmed)
     normalized.push(trimmed)
   }
-  return normalized
+  return normalized.sort()
 }
 
 /**
@@ -182,8 +185,9 @@ export class Bookmark<L extends TItemLocation> {
     }
     if (typeof this.hashValue[cacheKey] === 'undefined' || this.hashValue[cacheKey] === null) {
       // Nextcloud Bookmarks hashes the very same JSON server-side, with the
-      // fields in exactly this order (`fields[]=title&fields[]=url&fields[]=tags`),
-      // so don't reorder or add keys here lightly.
+      // fields in exactly this order (`fields[]=title&fields[]=url&fields[]=tags`)
+      // and the tags sorted the same way (see normalizeTags), so don't reorder
+      // or add keys here lightly.
       const json = syncTags
         ? JSON.stringify({ title: this.title, url: this.url, tags: this.tags || [] })
         : JSON.stringify({ title: this.title, url: this.url })
