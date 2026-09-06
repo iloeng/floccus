@@ -39,7 +39,20 @@ describe('Floccus', function() {
     describe(`${stringifyAccountData(ACCOUNT_DATA)} test ${ACCOUNT_DATA.serverRoot ? 'subfolder' : 'root'} Tag Sync`, function() {
       let account
       let tagsSupported
+      let bookmarkUrl
+
       beforeEach('set up account', async function() {
+        // Nextcloud keys bookmarks by URL per user, and deleting one only
+        // soft-deletes its tree entry -- the bookmark row and its tags stay in
+        // the trash. Re-creating the same URL calls softUndeleteEntry() and
+        // merges the tags in with tagMapper->addTo() (create appends where
+        // update replaces), so a shared URL would carry tags from one test into
+        // the next. Both Nextcloud profiles stringify the same, hence the
+        // root/subfolder part.
+        const scope = `${stringifyAccountData(ACCOUNT_DATA)}-${ACCOUNT_DATA.serverRoot ? 'subfolder' : 'root'}`
+        const slug = `${scope}-${this.currentTest.title}`.replace(/[^a-z0-9]+/gi, '-').toLowerCase()
+        bookmarkUrl = `http://ur.l/${slug}/`
+
         account = await Account.create(ACCOUNT_DATA)
         if (ACCOUNT_DATA.type === 'fake') {
           account.server.bookmarksCache = new Folder({
@@ -96,7 +109,7 @@ describe('Floccus', function() {
         }))
         const bookmarkId = await localResource.createBookmark(new Bookmark({
           title: 'url',
-          url: 'http://ur.l/',
+          url: bookmarkUrl,
           tags,
           parentId: fooFolder,
           location: ItemLocation.LOCAL,
@@ -120,7 +133,7 @@ describe('Floccus', function() {
       it('should upload tags of a new local bookmark', async function() {
         await setUpTaggedBookmark(['foo', 'bar'])
 
-        const serverBookmark = await findServerBookmark('http://ur.l/')
+        const serverBookmark = await findServerBookmark(bookmarkUrl)
         expect(serverBookmark).to.be.ok
         expect([...serverBookmark.tags].sort()).to.deep.equal(['bar', 'foo'])
       })
@@ -141,7 +154,7 @@ describe('Floccus', function() {
         await withSyncConnection(account, async() => {
           await account.server.createBookmark(new Bookmark({
             title: 'url',
-            url: 'http://ur.l/',
+            url: bookmarkUrl,
             tags: ['from-server'],
             parentId: serverFolder.id,
             location: ItemLocation.SERVER,
@@ -151,7 +164,7 @@ describe('Floccus', function() {
         await account.sync()
         expect(account.getData().error).to.not.be.ok
 
-        const localBookmark = await findLocalBookmark('http://ur.l/')
+        const localBookmark = await findLocalBookmark(bookmarkUrl)
         expect(localBookmark).to.be.ok
         expect(localBookmark.tags).to.deep.equal(['from-server'])
       })
@@ -162,16 +175,16 @@ describe('Floccus', function() {
         await localResource.updateBookmark(new Bookmark({
           id: bookmarkId,
           title: 'url',
-          url: 'http://ur.l/',
+          url: bookmarkUrl,
           tags: ['foo', 'added'],
-          parentId: (await findLocalBookmark('http://ur.l/')).parentId,
+          parentId: (await findLocalBookmark(bookmarkUrl)).parentId,
           location: ItemLocation.LOCAL,
         }))
 
         await account.sync()
         expect(account.getData().error).to.not.be.ok
 
-        const serverBookmark = await findServerBookmark('http://ur.l/')
+        const serverBookmark = await findServerBookmark(bookmarkUrl)
         expect([...serverBookmark.tags].sort()).to.deep.equal(['added', 'foo'])
       })
 
@@ -181,23 +194,23 @@ describe('Floccus', function() {
         await localResource.updateBookmark(new Bookmark({
           id: bookmarkId,
           title: 'url',
-          url: 'http://ur.l/',
+          url: bookmarkUrl,
           tags: ['foo'],
-          parentId: (await findLocalBookmark('http://ur.l/')).parentId,
+          parentId: (await findLocalBookmark(bookmarkUrl)).parentId,
           location: ItemLocation.LOCAL,
         }))
 
         await account.sync()
         expect(account.getData().error).to.not.be.ok
 
-        const serverBookmark = await findServerBookmark('http://ur.l/')
+        const serverBookmark = await findServerBookmark(bookmarkUrl)
         expect(serverBookmark.tags).to.deep.equal(['foo'])
       })
 
       it('should propagate a tag changed on the server', async function() {
         await setUpTaggedBookmark(['foo'])
 
-        const serverBookmark = await findServerBookmark('http://ur.l/')
+        const serverBookmark = await findServerBookmark(bookmarkUrl)
         await withSyncConnection(account, async() => {
           await account.server.updateBookmark(new Bookmark({
             id: serverBookmark.id,
@@ -212,14 +225,14 @@ describe('Floccus', function() {
         await account.sync()
         expect(account.getData().error).to.not.be.ok
 
-        const localBookmark = await findLocalBookmark('http://ur.l/')
+        const localBookmark = await findLocalBookmark(bookmarkUrl)
         expect([...localBookmark.tags].sort()).to.deep.equal(['foo', 'server-side'])
       })
 
       it('should not resurrect tags removed on the server', async function() {
         await setUpTaggedBookmark(['foo', 'bar'])
 
-        const serverBookmark = await findServerBookmark('http://ur.l/')
+        const serverBookmark = await findServerBookmark(bookmarkUrl)
         await withSyncConnection(account, async() => {
           await account.server.updateBookmark(new Bookmark({
             id: serverBookmark.id,
@@ -234,7 +247,7 @@ describe('Floccus', function() {
         await account.sync()
         expect(account.getData().error).to.not.be.ok
 
-        const localBookmark = await findLocalBookmark('http://ur.l/')
+        const localBookmark = await findLocalBookmark(bookmarkUrl)
         expect(localBookmark.tags || []).to.deep.equal([])
       })
 
@@ -244,15 +257,15 @@ describe('Floccus', function() {
         await localResource.updateBookmark(new Bookmark({
           id: bookmarkId,
           title: 'a new title',
-          url: 'http://ur.l/',
-          parentId: (await findLocalBookmark('http://ur.l/')).parentId,
+          url: bookmarkUrl,
+          parentId: (await findLocalBookmark(bookmarkUrl)).parentId,
           location: ItemLocation.LOCAL,
         }))
 
         await account.sync()
         expect(account.getData().error).to.not.be.ok
 
-        const serverBookmark = await findServerBookmark('http://ur.l/')
+        const serverBookmark = await findServerBookmark(bookmarkUrl)
         expect(serverBookmark.title).to.equal('a new title')
         expect([...serverBookmark.tags].sort()).to.deep.equal(['bar', 'foo'])
       })
@@ -268,7 +281,7 @@ describe('Floccus', function() {
         await localResource.updateBookmark(new Bookmark({
           id: bookmarkId,
           title: 'url',
-          url: 'http://ur.l/',
+          url: bookmarkUrl,
           tags: ['foo'],
           parentId: otherFolder,
           location: ItemLocation.LOCAL,
@@ -287,7 +300,7 @@ describe('Floccus', function() {
               new Folder({
                 title: 'other',
                 children: [
-                  new Bookmark({ title: 'url', url: 'http://ur.l/', tags: ['foo'] })
+                  new Bookmark({ title: 'url', url: bookmarkUrl, tags: ['foo'] })
                 ]
               }),
             ]
@@ -304,8 +317,8 @@ describe('Floccus', function() {
         await account.sync()
         expect(account.getData().error).to.not.be.ok
 
-        const serverBookmark = await findServerBookmark('http://ur.l/')
-        const localBookmark = await findLocalBookmark('http://ur.l/')
+        const serverBookmark = await findServerBookmark(bookmarkUrl)
+        const localBookmark = await findLocalBookmark(bookmarkUrl)
         expect([...serverBookmark.tags].sort()).to.deep.equal(['bar', 'foo'])
         expect([...localBookmark.tags].sort()).to.deep.equal(['bar', 'foo'])
       })
@@ -316,9 +329,9 @@ describe('Floccus', function() {
         await localResource.updateBookmark(new Bookmark({
           id: bookmarkId,
           title: 'url',
-          url: 'http://ur.l/',
+          url: bookmarkUrl,
           tags: ['bar', 'foo'],
-          parentId: (await findLocalBookmark('http://ur.l/')).parentId,
+          parentId: (await findLocalBookmark(bookmarkUrl)).parentId,
           location: ItemLocation.LOCAL,
         }))
 
@@ -326,15 +339,57 @@ describe('Floccus', function() {
         expect(account.getData().error).to.not.be.ok
 
         // The reorder is written back once so that both sides agree again --
-        // no tag may be lost or duplicated in the process
-        const serverBookmark = await findServerBookmark('http://ur.l/')
-        expect(serverBookmark.tags).to.deep.equal(['bar', 'foo'])
+        // no tag may be lost or duplicated in the process. Compared as a set,
+        // because the order a server hands its tags back in is its own business
+        // (Nextcloud's findByBookmark() has no ORDER BY, for one).
+        const serverBookmark = await findServerBookmark(bookmarkUrl)
+        expect([...serverBookmark.tags].sort()).to.deep.equal(['bar', 'foo'])
 
         // ...and the next sync has nothing left to do
         await account.sync()
         expect(account.getData().error).to.not.be.ok
-        expect((await findServerBookmark('http://ur.l/')).tags).to.deep.equal(['bar', 'foo'])
-        expect((await findLocalBookmark('http://ur.l/')).tags).to.deep.equal(['bar', 'foo'])
+        expect([...(await findServerBookmark(bookmarkUrl)).tags].sort()).to.deep.equal(['bar', 'foo'])
+        expect([...(await findLocalBookmark(bookmarkUrl)).tags].sort()).to.deep.equal(['bar', 'foo'])
+      })
+
+      it('should settle when the server returns tags in an order of its own', async function() {
+        if (ACCOUNT_DATA.type !== 'fake') {
+          // Forcing a specific server-side tag order means reaching into the
+          // server's tree, which only the fake one lets us do
+          return this.skip()
+        }
+        await setUpTaggedBookmark(['foo', 'bar'])
+
+        // Linkwarden hands a bookmark's tags back ordered by tag identity, not
+        // in the order they were written (its query specifies no ordering), so
+        // our write never comes back the way we sent it. Make the fake server
+        // behave the same way.
+        const serverBookmark = account.server.bookmarksCache.findItemFilter(
+          ItemType.BOOKMARK,
+          (item) => item.url === bookmarkUrl
+        )
+        serverBookmark.tags = ['bar', 'foo']
+
+        const serverUpdates = []
+        const updateBookmark = account.server.updateBookmark.bind(account.server)
+        account.server.updateBookmark = (bookmark) => {
+          serverUpdates.push(bookmark.id)
+          return updateBookmark(bookmark)
+        }
+
+        // The differing order registers as a change once, and the server wins
+        await account.sync()
+        expect(account.getData().error).to.not.be.ok
+        const settledTags = [...(await findLocalBookmark(bookmarkUrl)).tags]
+        expect(settledTags).to.deep.equal(['bar', 'foo'])
+        const settledUpdates = serverUpdates.length
+
+        // ...and then it stays put, rather than being rewritten every sync
+        await account.sync()
+        await account.sync()
+        expect(account.getData().error).to.not.be.ok
+        expect([...(await findLocalBookmark(bookmarkUrl)).tags]).to.deep.equal(settledTags)
+        expect(serverUpdates.length).to.equal(settledUpdates)
       })
     })
   })
