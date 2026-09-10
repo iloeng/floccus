@@ -266,6 +266,18 @@
   "StatusScheduled": {
     "message": "预定"
   },
+  "StatusAuthorizationneeded": {
+    "message": "需要登录"
+  },
+  "DescriptionAuthorizationneeded": {
+    "message": "此配置文件尚未连接到你的账户，无法在连接账户前进行同步。打开配置文件选项登录。"
+  },
+  "LabelAuthorize": {
+    "message": "登录"
+  },
+  "DescriptionImportauthorizationneeded": {
+    "message": "成功导入了配置文件。无法在设备间转移登录状态，因此通过 Google 云盘或 Dropbox 同步配置文件需要你再次登录才能同步。"
+  },
   "LabelReset": {
     "message": "重置"
   },
