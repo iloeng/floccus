@@ -27,6 +27,11 @@ export interface LinkwardenConfig {
 }
 
 const TIMEOUT = 300000
+const SERVER_ERROR_RETRIES = 3
+const SERVER_ERROR_RETRY_DELAY = 1000
+// Retrying is only safe for verbs that have no side effects when repeated:
+// A 5xx response doesn't tell us whether the server applied the request or not.
+const RETRIABLE_VERBS = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE']
 
 export default class LinkwardenAdapter implements Adapter, IResource<typeof ItemLocation.SERVER> {
   private server: LinkwardenConfig
@@ -308,8 +313,6 @@ export default class LinkwardenAdapter implements Adapter, IResource<typeof Item
 
   async sendRequest(verb:string, relUrl:string, type:string = null, body:any = null, returnRawResponse = false, item: TItem<TItemLocation> = null):Promise<any> {
     const url = this.server.url + relUrl
-    let res
-    let timedOut = false
 
     if (type && type.includes('application/json')) {
       body = JSON.stringify(body)
@@ -323,9 +326,46 @@ export default class LinkwardenAdapter implements Adapter, IResource<typeof Item
 
     Logger.log(`QUEUING ${verb} ${url}`)
 
-    if (!IS_BROWSER) {
-      return this.sendRequestNative(verb, url, type, body, returnRawResponse, item)
+    const retriable = RETRIABLE_VERBS.includes(verb.toUpperCase())
+
+    for (let attempt = 0; ; attempt++) {
+      try {
+        if (!IS_BROWSER) {
+          return await this.sendRequestNative(verb, url, type, body, returnRawResponse, item)
+        }
+        return await this.sendRequestWeb(verb, url, type, body, returnRawResponse, item)
+      } catch (e) {
+        const isLastAttempt = attempt === SERVER_ERROR_RETRIES
+        const isServerError = e instanceof HttpError && e.status >= 500
+        if (!retriable || !isServerError || isLastAttempt || this.canceled) {
+          throw e
+        }
+        Logger.log(
+          `${verb} ${url}: Server responded with ${e.status}. Retrying (` +
+            (attempt + 2) + '/' + (SERVER_ERROR_RETRIES + 1) + ')'
+        )
+        await this.delay(SERVER_ERROR_RETRY_DELAY * Math.pow(2, attempt))
+      }
     }
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.abortSignal.aborted) {
+        reject(new CancelledSyncError())
+        return
+      }
+      const timer = setTimeout(resolve, ms)
+      this.abortSignal.addEventListener('abort', () => {
+        clearTimeout(timer)
+        reject(new CancelledSyncError())
+      }, { once: true })
+    })
+  }
+
+  private async sendRequestWeb(verb:string, url:string, type:string, body:any, returnRawResponse: boolean, item: TItem<TItemLocation> = null):Promise<any> {
+    let res
+    let timedOut = false
 
     try {
       res = await this.fetchQueue.add(() => {
