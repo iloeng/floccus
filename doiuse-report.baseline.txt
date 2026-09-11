@@ -2,6 +2,8 @@
 
 
 
+108:1: CSS overflow property only partially supported by: Safari on iOS (11.0-11.2), QQ Browser (14.9) (css-overflow)
+112:1: CSS scrollbar styling not supported by: Safari on iOS (16.6-16.7,18.5-18.7) and only partially supported by: Chrome (103-104,109,111-112,116-118,120), Safari on iOS (11.0-11.2), Android Browser (149), QQ Browser (14.9) (css-scrollbar)
 1:10179: CSS caret-color not supported by: Safari on iOS (11.0-11.2) (css-caret-color)
 1:10389: CSS caret-color not supported by: Safari on iOS (11.0-11.2) (css-caret-color)
 1:10599: CSS caret-color not supported by: Safari on iOS (11.0-11.2) (css-caret-color)

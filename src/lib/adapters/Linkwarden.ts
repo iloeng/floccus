@@ -120,6 +120,7 @@ export default class LinkwardenAdapter implements Adapter, IResource<typeof Item
       {
         url: bookmark.url,
         name: bookmark.title,
+        tags: (bookmark.tags || []).map(name => ({ name })),
         collection: {
           id: bookmark.parentId,
         },
@@ -140,7 +141,10 @@ export default class LinkwardenAdapter implements Adapter, IResource<typeof Item
         id: bookmark.id,
         url: bookmark.url,
         name: bookmark.title,
-        tags: [],
+        // This endpoint replaces the link's tags wholesale, so when we're not
+        // syncing tags we have to read back and re-send what's already there --
+        // otherwise every sync would strip tags set in Linkwarden's own UI.
+        tags: (bookmark.tags ?? await this.getBookmarkTags(bookmark.id)).map(name => ({ name })),
         collection: {
           id: bookmark.parentId,
           name: collection.name,
@@ -150,6 +154,16 @@ export default class LinkwardenAdapter implements Adapter, IResource<typeof Item
       false,
       bookmark,
     )
+  }
+
+  async getBookmarkTags(id: string | number): Promise<string[]> {
+    try {
+      const { response: link } = await this.sendRequest('GET', `/api/v1/links/${id}`)
+      return (link?.tags || []).map(tag => tag.name)
+    } catch (e) {
+      Logger.log('(linkwarden) Failed to read existing tags of link ' + id, e)
+      return []
+    }
   }
 
   async removeBookmark(bookmark: Bookmark<typeof ItemLocation.SERVER>): Promise<void> {
@@ -298,6 +312,7 @@ export default class LinkwardenAdapter implements Adapter, IResource<typeof Item
                 title: link.name,
                 parentId: link.collectionId,
                 url: link.url,
+                tags: (link.tags || []).map(tag => tag.name),
                 location: ItemLocation.SERVER,
               }))
           ),
@@ -494,6 +509,7 @@ export default class LinkwardenAdapter implements Adapter, IResource<typeof Item
     return {
       preserveOrder: false,
       hashFn: ['xxhash3', 'murmur3', 'sha256'],
+      supportsTags: true,
     }
   }
 

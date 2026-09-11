@@ -32,6 +32,73 @@ interface IItemIndex<L extends TItemLocation> {
 
 let HASH_ITERATIONS = 0
 
+/**
+ * Bring a bookmark's tags into canonical form: strings only, trimmed, no empty
+ * entries, no duplicates, sorted.
+ *
+ * Sorting is what makes tags behave like the set they are: the order a server
+ * hands them back in is its own business (Linkwarden orders by tag identity,
+ * Nextcloud by whatever the database feels like), so without a canonical order
+ * a pure reordering would hash differently and register as a change.
+ *
+ * The sort has to agree byte for byte with Nextcloud Bookmarks, which sorts
+ * with `sort($tags, SORT_STRING)` before hashing `{title, url, tags}` for its
+ * server-side folder hashes. Plain `.sort()` is UTF-16 code-unit order, which
+ * matches that across the BMP. Do NOT switch this to `localeCompare` -- it is
+ * locale-dependent and would silently stop matching, leaving folders looking
+ * changed on every sync. (Astral characters do diverge from PHP's byte order;
+ * the cost is a needlessly re-fetched folder, never wrong data.)
+ *
+ * `undefined` means "this resource didn't tell us anything about tags" and is
+ * preserved as such, so we never mistake a silent adapter for "all tags removed".
+ */
+export function normalizeTags(tags?: string[]): string[] | undefined {
+  if (!Array.isArray(tags)) {
+    return undefined
+  }
+  const seen = new Set<string>()
+  const normalized = []
+  for (const tag of tags) {
+    if (typeof tag !== 'string') {
+      continue
+    }
+    const trimmed = tag.trim()
+    if (!trimmed || seen.has(trimmed)) {
+      continue
+    }
+    seen.add(trimmed)
+    normalized.push(trimmed)
+  }
+  return normalized.sort()
+}
+
+/**
+ * Cache slot for a memoized hash. Every setting that changes the hashed bytes
+ * has to be part of it, or a sync that negotiated different settings would read
+ * back a stale value.
+ */
+function hashCacheKey({ preserveOrder, hashFn, syncTags }: IHashSettings): string {
+  return `${preserveOrder}-${hashFn}-${Boolean(syncTags)}`
+}
+
+/**
+ * Compare two tag lists as sets: tags are unordered by nature, so a mere
+ * reordering must not count as a change.
+ */
+export function tagsEqual(tags1?: string[], tags2?: string[]): boolean {
+  const set1 = new Set(tags1 || [])
+  const set2 = new Set(tags2 || [])
+  if (set1.size !== set2.size) {
+    return false
+  }
+  for (const tag of set1) {
+    if (!set2.has(tag)) {
+      return false
+    }
+  }
+  return true
+}
+
 export class Bookmark<L extends TItemLocation> {
   public type = ItemType.BOOKMARK
   public id: string | number
@@ -62,7 +129,7 @@ export class Bookmark<L extends TItemLocation> {
     this.id = id
     this.parentId = parentId
     this.title = title
-    this.tags = tags
+    this.tags = normalizeTags(tags)
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     this.location = location || ItemLocation.LOCAL
@@ -101,33 +168,40 @@ export class Bookmark<L extends TItemLocation> {
   }
 
   setHashCacheValue(hashSettings: IHashSettings, value: string): void {
-    const cacheKey = `${hashSettings.preserveOrder}-${hashSettings.hashFn}`
+    const cacheKey = hashCacheKey(hashSettings)
     if (!this.hashValue) this.hashValue = {}
     this.hashValue[cacheKey] = value
   }
 
   async hash(
-    { preserveOrder = false, hashFn = 'sha256' }: IHashSettings = {
+    { preserveOrder = false, hashFn = 'sha256', syncTags = false }: IHashSettings = {
       preserveOrder: false,
       hashFn: 'sha256',
     }
   ): Promise<string> {
+    const cacheKey = hashCacheKey({ preserveOrder, hashFn, syncTags })
     if (!this.hashValue) {
       this.hashValue = {}
     }
-    if (typeof this.hashValue[hashFn] === 'undefined' || this.hashValue[hashFn] === null) {
-      const json = JSON.stringify({ title: this.title, url: this.url })
+    if (typeof this.hashValue[cacheKey] === 'undefined' || this.hashValue[cacheKey] === null) {
+      // Nextcloud Bookmarks hashes the very same JSON server-side, with the
+      // fields in exactly this order (`fields[]=title&fields[]=url&fields[]=tags`)
+      // and the tags sorted the same way (see normalizeTags), so don't reorder
+      // or add keys here lightly.
+      const json = syncTags
+        ? JSON.stringify({ title: this.title, url: this.url, tags: this.tags || [] })
+        : JSON.stringify({ title: this.title, url: this.url })
       if (hashFn === 'sha256') {
-        this.hashValue[hashFn] = await Crypto.sha256(json)
+        this.hashValue[cacheKey] = await Crypto.sha256(json)
       } else if (hashFn === 'xxhash3') {
-        this.hashValue[hashFn] = await Crypto.xxhash32(json)
+        this.hashValue[cacheKey] = await Crypto.xxhash32(json)
       } else if (hashFn === 'murmur3') {
-        this.hashValue[hashFn] = await Crypto.murmurHash3(json)
+        this.hashValue[cacheKey] = await Crypto.murmurHash3(json)
       } else {
         throw new Error('Unsupported hash function specified')
       }
     }
-    return this.hashValue[hashFn]
+    return this.hashValue[cacheKey]
   }
 
   clone(withHash?: boolean): Bookmark<L> {
@@ -433,18 +507,18 @@ export class Folder<L extends TItemLocation> {
   }
 
   setHashCacheValue(hashSettings: IHashSettings, value: string): void {
-    const cacheKey = `${hashSettings.preserveOrder}-${hashSettings.hashFn}`
+    const cacheKey = hashCacheKey(hashSettings)
     if (!this.hashValue) this.hashValue = {}
     this.hashValue[cacheKey] = value
   }
 
   async hash(
-    { preserveOrder = false, hashFn = 'sha256' }: IHashSettings = {
+    { preserveOrder = false, hashFn = 'sha256', syncTags = false }: IHashSettings = {
       preserveOrder: false,
       hashFn: 'sha256',
     }
   ): Promise<string> {
-    const cacheKey = `${preserveOrder}-${hashFn}`
+    const cacheKey = hashCacheKey({ preserveOrder, hashFn, syncTags })
     if (this.hashValue && typeof this.hashValue[cacheKey] !== 'undefined') {
       return this.hashValue[cacheKey]
     }
@@ -475,7 +549,7 @@ export class Folder<L extends TItemLocation> {
       title: this.title,
       children: await Parallel.map(
         children,
-        (child) => child.hash({ preserveOrder, hashFn }),
+        (child) => child.hash({ preserveOrder, hashFn, syncTags }),
         1
       ),
     })
