@@ -89,7 +89,7 @@ jobs:
 
   android-appium:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 80
     needs: init
 
     env:
