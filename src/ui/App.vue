@@ -5,7 +5,7 @@
     <v-banner
       v-if="isBrowser"
       color="primary"
-      class="mb-1 mt-3 white--text"
+      class="mb-1 white--text"
       single-line>
       {{ t('DescriptionDonateintervention') }}
       <template #actions>
