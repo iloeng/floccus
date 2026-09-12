@@ -960,6 +960,15 @@
   "LabelParentfolder": {
     "message": "Ülemkaust"
   },
+  "LabelTags": {
+    "message": "Sildid"
+  },
+  "DescriptionTags": {
+    "message": "Sisesta sildi nimi ja vajuta Enter-klahvi"
+  },
+  "LabelSearchbytag": {
+    "message": "Otsi järjehoidjaid, mille silt on „{0}“"
+  },
   "LabelHome": {
     "message": "Avaleht"
   },
